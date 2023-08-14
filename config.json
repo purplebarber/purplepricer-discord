@@ -3,5 +3,8 @@
   "pricer_sse_url": "",
   "extra_headers": {},
   "extra_params": {},
-  "discord_webhook_urls": []
+  "discord_webhook_urls": [],
+  "username": "",
+  "avatar_url": "",
+  "item_site_url": "https://autobot.tf/items/"
 }
