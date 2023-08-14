@@ -64,10 +64,12 @@ class SSEListener:
                 old_item_data = {"name": name, "buy": buy, "sell": sell,
                                  "old_buy": buy, "old_sell": sell}
 
-            await self.webhook.send_webhooks_to_urls(sku, name, old_item_data)
-            self.database.insert_item_data(sku, {"name": name, "buy": buy, "sell": sell,
-                                                 "old_buy": old_item_data.get("buy"),
-                                                 "old_sell": old_item_data.get("sell")})
+            item_data = {"name": name, "buy": buy, "sell": sell,
+                         "old_buy": old_item_data.get("buy"),
+                         "old_sell": old_item_data.get("sell")}
+
+            self.database.insert_item_data(sku, item_data)
+            await self.webhook.send_webhooks_to_urls(sku, name, item_data)
 
     async def close(self) -> None:
         await self.webhook.close()
