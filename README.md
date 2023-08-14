@@ -23,3 +23,8 @@ purplepricer-discord is a script that connect's to my pricer's SSE server and se
     ```bash
     python main.py
     ```
+
++ To run with PM2:
+    ```bash
+    pm2 start main.py --interpreter python3.10 --name purplepricer-discord --time --cron '0 */6 * * *'
+    ```
