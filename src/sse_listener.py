@@ -20,7 +20,6 @@ class SSEListener:
         self.headers = self.config.headers
         self.params = self.config.params
         self.database = Database(db_name=DB_NAME, table_name="prices")
-        self.sse_response = None
 
     async def update_pricelist(self) -> None:
         prices = await self.http.get(self.config.pricelist_url, headers=self.config.headers, params=self.config.params)
@@ -47,9 +46,7 @@ class SSEListener:
     async def listen_and_update(self) -> None:
         while True:
             try:
-                if self.sse_response is None:
-                    self.sse_response = self.sse_request()
-                client = sseclient.SSEClient(self.sse_response)
+                client = sseclient.SSEClient(self.sse_request())
                 for event in client.events():
                     if not event.event == "price":
                         print("Event not price")
