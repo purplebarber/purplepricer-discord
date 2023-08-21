@@ -1,2 +1,3 @@
 aiohttp
 sseclient-py
+requests
