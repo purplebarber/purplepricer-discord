@@ -27,9 +27,8 @@ class SSEListener:
         if not prices:
             return
 
-        prices = prices.get("items")
-
-        for sku, item in prices.items():
+        for item in prices.get("items"):
+            sku = item.get("sku")
             name = item.get("name")
             buy = item.get("buy")
             sell = item.get("sell")
