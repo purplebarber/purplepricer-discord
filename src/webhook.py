@@ -22,11 +22,13 @@ class Webhook:
         webhook_data = {
             "username": self.username,
             "avatar_url": self.avatar_url,
+            "content": '',
             "embeds": [
                 {
                     "author": {
                         "name": item_name,
-                        "url": f"{self.item_site_url}/{sku}"
+                        "url": f"{self.item_site_url}/{sku}",
+                        "icon_url": self.avatar_url
                     },
                     "color": 16735095,
                     "fields": [
@@ -95,12 +97,12 @@ class Webhook:
         if old_prices > new_prices:
             if intent == "buy":
                 return {
-                    "name": "Buying for ⬇",
+                    "name": "Buying for 📉",
                     "value": f"{old_prices_text} ➡ {new_prices_text}",
                 }
             elif intent == "sell":
                 return {
-                    "name": "Selling for ⬇",
+                    "name": "Selling for 📉",
                     "value": f"{old_prices_text} ➡ {new_prices_text}",
                 }
 
@@ -108,12 +110,12 @@ class Webhook:
         if old_prices < new_prices:
             if intent == "buy":
                 return {
-                    "name": "Buying for ⬆",
+                    "name": "Buying for 📈",
                     "value": f"{old_prices_text} ➡ {new_prices_text}",
                 }
             elif intent == "sell":
                 return {
-                    "name": "Selling for ⬆",
+                    "name": "Selling for 📈",
                     "value": f"{old_prices_text} ➡ {new_prices_text}",
                 }
 
