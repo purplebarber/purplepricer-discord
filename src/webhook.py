@@ -132,7 +132,7 @@ class Webhook:
                 buying_for_desc["name"], selling_for_desc["name"]
             )
 
-        if not sku == "5021;6":
+        if sku != "5021;6":
             return
 
         for url in self.key_webhook_urls:

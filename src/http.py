@@ -1,5 +1,5 @@
-from aiohttp import ClientSession, ClientTimeout
 from json import dumps
+from aiohttp import ClientSession, ClientTimeout
 
 
 class HTTP:
@@ -30,9 +30,8 @@ class HTTP:
     async def post(self, url: str, **kwargs) -> dict:
         kwargs["headers"] = kwargs.get("headers", dict())
         kwargs["params"] = kwargs.get("params", dict())
-        kwargs["json"] = kwargs.get("json", dumps(dict()))
+        kwargs["json"] = kwargs.get("json", dict())
         kwargs["timeout"] = kwargs.get("timeout", self.timeout)
-
         try:
             await self.session.post(url, **kwargs)
             return dict()
