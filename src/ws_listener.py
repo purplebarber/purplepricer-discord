@@ -5,19 +5,28 @@ from src.webhook import Webhook
 from src.database import Database
 import aiohttp
 from asyncio import sleep, Queue, create_task
-from aiohttp_sse_client import client as sse_client
+import websockets
+
 
 DB_NAME = "src/prices.db"
 
 
-class SSEListener:
+class WSListener:
     def __init__(self):
         self.config = Config()
         self.webhook = Webhook()
         self.http = HTTP()
-        self.sse_url = self.config.sse_url
+        self.uri = self.config.sse_url
+
+        if self.uri.endswith("/"):
+            self.uri = self.uri[:-1]
+
         self.headers = self.config.headers
         self.params = self.config.params
+
+        if 'token' in self.params:
+            self.uri = f"{self.uri}?token={self.params.get('token')}"
+
         self.database = Database(db_name=DB_NAME, table_name="prices")
 
     async def update_pricelist(self) -> None:
@@ -50,14 +59,16 @@ class SSEListener:
 
         while True:
             try:
-                async with sse_client.EventSource(self.sse_url, headers=self.headers, params=self.params)\
-                        as event_source:
-                    async for event in event_source:
-                        if event.message != "price":
+                async with websockets.connect(self.uri, extra_headers=self.headers) as websocket:
+                    async for message in websocket:
+                        json_data = loads(message)
+
+                        event = json_data.get("event")
+                        if event != "price":
                             print("Event not price")
                             continue
 
-                        data = loads(event.data)
+                        data = json_data.get("data")
                         sku = data.get("sku")
                         name = data.get("name")
                         buy = data.get("buy")

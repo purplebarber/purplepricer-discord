@@ -1,4 +1,4 @@
 aiohttp
-sseclient-py
+websockets
 requests
-aiohttp-sse-client
+```

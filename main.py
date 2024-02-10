@@ -1,9 +1,9 @@
-from src.sse_listener import SSEListener
+from src.ws_listener import WSListener
 from asyncio import run
 
 
 async def main() -> None:
-    sse = SSEListener()
+    sse = WSListener()
     await sse.update_pricelist()
     try:
         await sse.listen_and_update()
