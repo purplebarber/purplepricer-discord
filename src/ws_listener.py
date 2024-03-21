@@ -1,12 +1,10 @@
+import socketio
 from json import loads
 from src.http import HTTP
 from src.config import Config
 from src.webhook import Webhook
 from src.database import Database
-import aiohttp
 from asyncio import sleep, Queue, create_task
-import websockets
-
 
 DB_NAME = "src/prices.db"
 
@@ -18,14 +16,12 @@ class WSListener:
         self.http = HTTP()
         self.uri = self.config.sse_url
 
-        if self.uri.endswith("/"):
-            self.uri = self.uri[:-1]
+        # Socket.IO setup
+        self.sio = socketio.AsyncClient()
+        self.database = Database(db_name=DB_NAME, table_name="prices")
 
         self.headers = self.config.headers
         self.params = self.config.params
-
-        if 'token' in self.params:
-            self.uri = f"{self.uri}?token={self.params.get('token')}"
 
         self.database = Database(db_name=DB_NAME, table_name="prices")
 
@@ -53,50 +49,38 @@ class WSListener:
         async def process_webhooks():
             while True:
                 sku_queue, name_queue, item_data_queue = await webhook_queue.get()
-                await self.webhook.send_webhooks_to_urls(sku_queue, name_queue, item_data_queue)
+                create_task(self.webhook.send_webhooks_to_urls(sku_queue, name_queue, item_data_queue))
                 webhook_queue.task_done()
+
         create_task(process_webhooks())
 
-        while True:
-            try:
-                async with websockets.connect(self.uri, extra_headers=self.headers) as websocket:
-                    async for message in websocket:
-                        json_data = loads(message)
+        await self.sio.connect(self.uri, auth=self.config.headers.get('Authorization'))
 
-                        event = json_data.get("event")
-                        if event != "price":
-                            print("Event not price")
-                            continue
+        @self.sio.on('price')
+        async def message(data):  # Handle incoming messages
+            sku = data.get("sku")
+            name = data.get("name")
+            buy = data.get("buy")
+            sell = data.get("sell")
 
-                        data = json_data.get("data")
-                        sku = data.get("sku")
-                        name = data.get("name")
-                        buy = data.get("buy")
-                        sell = data.get("sell")
+            if not sku or not name or not buy or not sell:
+                print("Missing data")
+                return
 
-                        if not sku or not name or not buy or not sell:
-                            print("Missing data")
-                            continue
+            old_item_data = self.database.get_item_data(sku)
+            if not old_item_data:
+                old_item_data = {"name": name, "buy": buy, "sell": sell,
+                                 "old_buy": buy, "old_sell": sell}
 
-                        old_item_data = self.database.get_item_data(sku)
-                        if not old_item_data:
-                            old_item_data = {"name": name, "buy": buy, "sell": sell,
-                                             "old_buy": buy, "old_sell": sell}
+            item_data = {"name": name, "buy": buy, "sell": sell,
+                         "old_buy": old_item_data.get("buy"),
+                         "old_sell": old_item_data.get("sell")}
 
-                        item_data = {"name": name, "buy": buy, "sell": sell,
-                                     "old_buy": old_item_data.get("buy"),
-                                     "old_sell": old_item_data.get("sell")}
+            self.database.insert_item_data(sku, item_data)
+            await webhook_queue.put((sku, name, item_data))
 
-                        self.database.insert_item_data(sku, item_data)
-                        await webhook_queue.put((sku, name, item_data))
-
-            except aiohttp.ClientConnectorError as connector_error:
-                print(f"Client Connector Error: {connector_error}")
-                await sleep(5)
-
-            except Exception as e:
-                print(f"Exception: {e}")
-                await sleep(5)
+        await self.sio.wait()
 
     async def close(self) -> None:
         await self.webhook.close()
+        await self.sio.disconnect()  # Close Socket.IO connection
